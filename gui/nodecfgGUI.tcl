@@ -1590,6 +1590,45 @@ proc configGUI_attachDockerToExt { wi node } {
     pack $w -fill both
 }
 
+#****f* nodecfgGUI.tcl/configGUI_anotherImage
+# NAME
+#   configGUI_anotherImage -- configure GUI - use another Docker image
+# SYNOPSIS
+#   configGUI_anotherImage $wi $node
+# FUNCTION
+#   Creating module for using different docker image for this virtual node
+#   on Linux.
+# INPUTS
+#   * wi -- widget
+#   * node -- node id
+#****
+proc configGUI_anotherImage { wi node } {
+    global VROOT_MASTER isOSlinux
+
+    if { !$isOSlinux } {
+	return
+    }
+
+    upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
+    global guielements docker_another
+    lappend guielements configGUI_anotherImage
+
+    set docker_another [getNodeDockerAnother $node]
+
+    set w $wi.dockerImg
+    ttk::frame $w -relief groove -borderwidth 2 -padding 2
+    ttk::label $w.label -text "Use another docker image:" 
+
+    pack $w.label -side left -padx 2
+
+    ttk::entry $w.img -width 25
+    set img $docker_another
+    $w.img insert 0 $img
+    pack $w.img -side left -padx 7
+
+    pack $w -fill both
+}
+
 #****f* nodecfgGUI.tcl/configGUI_cpuConfig
 # NAME
 #   configGUI_cpuConfig -- configure GUI - CPU configuration
@@ -2396,6 +2435,29 @@ proc configGUI_attachDockerToExtApply { wi node } {
     if { $oper_mode == "edit"} {
 	if { [getNodeDockerAttach $node] != $docker_enable_str } {
 	    setNodeDockerAttach $node $docker_enable_str
+	    set changed 1
+	}
+    }
+}
+
+#****f* nodecfgGUI.tcl/configGUI_anotherImageApply
+# NAME
+#   configGUI_anotherImageApply -- configure GUI - another docker image apply
+# SYNOPSIS
+#   configGUI_anotherImageApply $wi $node
+# FUNCTION
+#   Saves changes in the module with another docker image
+# INPUTS
+#   * wi -- widget
+#   * node -- node id
+#****
+proc configGUI_anotherImageApply { wi node } {
+    upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
+    global docker_another
+    set docker_another [$wi.dockerImg.img get]
+    if { $oper_mode == "edit"} {
+	if { [getNodeDockerAnother $node] != $docker_another } {
+	    setNodeDockerAnother $node $docker_another
 	    set changed 1
 	}
     }

@@ -340,9 +340,14 @@ proc createNodeContainer { node } {
 	set network "bridge"
     }
 
+    set vroot [getNodeDockerAnother $node]
+    if { $vroot == "" } {
+	set vroot $VROOT_MASTER
+    }
+
     catch {exec docker run -d --sysctl net.ipv6.conf.all.disable_ipv6=0 --privileged --cap-add=ALL --net=$network -h [getNodeName $node] \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
-        --name $node_id $VROOT_MASTER } err
+        --name $node_id $vroot } err
     if { $debug } {
         puts "'exec docker run' ($node_id) caught:\n$err"
     }
