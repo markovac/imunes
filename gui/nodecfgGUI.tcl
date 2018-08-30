@@ -2979,10 +2979,15 @@ proc addIPsecConnWindow { node tab } {
     set espOptionsLframe $mainFrame.esp_options_lframe
     set ikeSALframe $mainFrame.ike_sa_lframe
 
-    createIPsecGUI $node $mainFrame $connParamsLframe $espOptionsLframe $ikeSALframe "Add"
-    $mainFrame.buttons_container.apply configure -command "putIPsecConnectionInTree $node $tab add"
-
-    setDefaultsForIPsec $node $connParamsLframe $espOptionsLframe
+    if { "[ifcList $node]" != "" } {
+	createIPsecGUI $node $mainFrame $connParamsLframe $espOptionsLframe $ikeSALframe "Add"
+	$mainFrame.buttons_container.apply configure -command "putIPsecConnectionInTree $node $tab add"
+	setDefaultsForIPsec $node $connParamsLframe $espOptionsLframe
+    } else {
+	tk_messageBox -message "Selected node does not have any interfaces!" -title "Error" -icon error -type ok
+	destroy .d
+	return
+    }
 }
 
 proc modIPsecConnWindow { node tab } {
@@ -2991,10 +2996,16 @@ proc modIPsecConnWindow { node tab } {
     set espOptionsLframe $mainFrame.esp_options_lframe
     set ikeSALframe $mainFrame.ike_sa_lframe
 
-    createIPsecGUI $node $mainFrame $connParamsLframe $espOptionsLframe $ikeSALframe "Modify"
-    $mainFrame.buttons_container.apply configure -command "putIPsecConnectionInTree $node $tab modify"
-
-    populateValuesForUpdate $node $tab $connParamsLframe $espOptionsLframe
+    set selected [$tab.tree focus]
+    if { $selected != "" } {
+	createIPsecGUI $node $mainFrame $connParamsLframe $espOptionsLframe $ikeSALframe "Modify"
+	$mainFrame.buttons_container.apply configure -command "putIPsecConnectionInTree $node $tab modify"
+	populateValuesForUpdate $node $tab $connParamsLframe $espOptionsLframe
+    } else {
+	tk_messageBox -message "Please select item to modify!" -title "Error" -icon error -type ok
+	destroy .d
+	return
+    }
 }
 
 proc deleteIPsecConnection { node tab } {
@@ -3661,12 +3672,6 @@ proc setDefaultsForIPsec { node connParamsLframe espOptionsLframe } {
     $connParamsLframe.local_ip_entry configure -values $localIPs
     set local_ip_address [lindex $localIPs 0]
 
-    if { "[ifcList $node]" == "" } {
-	tk_messageBox -message "Selected node does not have any interfaces!" -title "Error" -icon error -type ok
-	destroy .d
-	return
-    }
-
     set peerHasAddr 0
     set peerHasIfc 0
     foreach cnode $nodes {
@@ -3723,8 +3728,8 @@ proc setDefaultsForIPsec { node connParamsLframe espOptionsLframe } {
 # FUNCTION
 #   When modifying existing connection, populates input fields with data of selected IPsec connection
 # INPUTS
-#   tab - tab widget that represents IPsec connection part od node config GUI
 #   node - current node for which the procedure is invoked
+#   tab - tab widget that represents IPsec connection part od node config GUI
 #****
 proc populateValuesForUpdate { node tab connParamsLframe espOptionsLframe } {
     global version connection_name instance_duration keying_duration negotiation_attempts
@@ -3734,138 +3739,132 @@ proc populateValuesForUpdate { node tab connParamsLframe espOptionsLframe } {
     global ah_suits modp_suits secret_file no_encryption old_conn_name
 
     set selected [$tab.tree focus]
-    if { $selected != "" } {
-	set connection_name $selected
-	set version "ikev2"
+    set connection_name $selected
+    set version "ikev2"
 
-	set local_cert_file [getNodeIPsecSetting $node "configuration" "conn $selected" "local_cert"]
-	set secret_file [getNodeIPsecSetting $node "configuration" "conn $selected" "local_key_file"]
+    set local_cert_file [getNodeIPsecSetting $node "configuration" "conn $selected" "local_cert"]
+    set secret_file [getNodeIPsecSetting $node "configuration" "conn $selected" "local_key_file"]
 
-	set var_list { \
-	    {type "type" "tunnel" } \
-	    {local_ip_address "left" ""} \
-	    {local_subnet "leftsubnet" ""} \
-	    {peers_ip "right" ""} \
-	    {peers_subnet "rightsubnet" ""} \
-	    {peers_name "peersname" ""} \
-	    {peers_id "rightid" ""} \
-	    {psk_key "sharedkey" ""} \
-	    {local_name "leftid" ""} \
-	    {keying_duration "ikelifetime" "3h"} \
-	    {instance_duration "keylife" "1h"} \
-	    {how_long_before "rekeymargin" "9m"} \
-	    {negotiation_attempts "keyingtries" "3"} \
-	    {ike_from_cfg "ike" "aes128-sha1-modp2048"} \
-	    {esp_from_cfg "esp" "aes128-sha1-modp2048"} \
+    set var_list { \
+	{type "type" "tunnel" } \
+	{local_ip_address "left" ""} \
+	{local_subnet "leftsubnet" ""} \
+	{peers_ip "right" ""} \
+	{peers_subnet "rightsubnet" ""} \
+	{peers_name "peersname" ""} \
+	{peers_id "rightid" ""} \
+	{psk_key "sharedkey" ""} \
+	{local_name "leftid" ""} \
+	{keying_duration "ikelifetime" "3h"} \
+	{instance_duration "keylife" "1h"} \
+	{how_long_before "rekeymargin" "9m"} \
+	{negotiation_attempts "keyingtries" "3"} \
+	{ike_from_cfg "ike" "aes128-sha1-modp2048"} \
+	{esp_from_cfg "esp" "aes128-sha1-modp2048"} \
+    }
+
+    foreach var $var_list {
+	set [lindex $var 0] [getNodeIPsecSetting $node "configuration" "conn $selected" [lindex $var 1]]
+	if { [set [lindex $var 0]] == "" } {
+	    set [lindex $var 0] [lindex $var 2]
 	}
+    }
 
-	foreach var $var_list {
-	    set [lindex $var 0] [getNodeIPsecSetting $node "configuration" "conn $selected" [lindex $var 1]]
-	    if { [set [lindex $var 0]] == "" } {
-		set [lindex $var 0] [lindex $var 2]
-	    }
+    set timeList { \
+	    {s "seconds"} {m "minutes"} \
+	    {h "hours"} {d "days"}
+    }
+    foreach item $timeList {
+	if { [string index $instance_duration end] == [lindex $item 0] } {
+	    set conn_time [lindex $item 1]
 	}
-
-	set timeList { \
-		{s "seconds"} {m "minutes"} \
-		{h "hours"} {d "days"}
+	if { [string index $keying_duration end] == [lindex $item 0] } {
+	    set keying_time [lindex $item 1]
 	}
-	foreach item $timeList {
-	    if { [string index $instance_duration end] == [lindex $item 0] } {
-		set conn_time [lindex $item 1]
-	    }
-	    if { [string index $keying_duration end] == [lindex $item 0] } {
-		set keying_time [lindex $item 1]
-	    }
-	    if { [string index $how_long_before end] == [lindex $item 0] } {
-		set how_long_time [lindex $item 1]
-	    }
+	if { [string index $how_long_before end] == [lindex $item 0] } {
+	    set how_long_time [lindex $item 1]
 	}
+    }
 
-	foreach item { instance_duration keying_duration how_long_before } {
-	    set $item [string trimright [set $item] smhd]
+    foreach item { instance_duration keying_duration how_long_before } {
+	set $item [string trimright [set $item] smhd]
+    }
+
+    foreach item { encr auth modp } {
+	set ike_$item [getIkeParam $ike_from_cfg $item]
+    }
+
+    foreach item { esp ah modp } {
+	set $item\_suits [getEspParam $esp_from_cfg $item]
+    }
+
+    if { $esp_suits == "null" } {
+	set method ah
+	showNullEncryption $espOptionsLframe
+    } else {
+	set method esp
+	showFullEncryption $espOptionsLframe
+    }
+
+    set auto [getNodeIPsecSetting $node "configuration" "conn $selected" "auto"]
+    if { $auto == "start" } {
+	set start_connection 1
+    } else {
+	set start_connection 0
+    }
+
+    set authby [getNodeIPsecSetting $node "configuration" "conn $selected" "authby"]
+    if { $authby == "secret" } {
+	hideCertificates $connParamsLframe
+    } else {
+	showCertificates $connParamsLframe
+    }
+
+    set nodes [getListOfOtherNodes $node]
+    $connParamsLframe.peer_name_entry configure -values [concat %any $nodes]
+
+    set local_ip_address [getNodeIPsecSetting $node "configuration" "conn $selected" "left"]
+    set localIPs [getAllIpAddresses $node]
+    $connParamsLframe.local_ip_entry configure -values $localIPs
+    foreach localIp $localIPs {
+	if { $local_ip_address == [lindex [split $localIp /] 0]} {
+	    set local_ip_address $localIp
+	    break
 	}
+    }
 
-	foreach item { encr auth modp } {
-	    set ike_$item [getIkeParam $ike_from_cfg $item]
-	}
-
-	foreach item { esp ah modp } {
-	    set $item\_suits [getEspParam $esp_from_cfg $item]
-	}
-
-	if { $esp_suits == "null" } {
-	    set method ah
-	    showNullEncryption $espOptionsLframe
-	} else {
-	    set method esp
-	    showFullEncryption $espOptionsLframe
-	}
-
-	set auto [getNodeIPsecSetting $node "configuration" "conn $selected" "auto"]
-	if { $auto == "start" } {
-	    set start_connection 1
-	} else {
-	    set start_connection 0
-	}
-
-	set authby [getNodeIPsecSetting $node "configuration" "conn $selected" "authby"]
-	if { $authby == "secret" } {
-	    hideCertificates $connParamsLframe
-	} else {
-	    showCertificates $connParamsLframe
-	}
-
-	set nodes [getListOfOtherNodes $node]
-	$connParamsLframe.peer_name_entry configure -values [concat %any $nodes]
-
-	set local_ip_address [getNodeIPsecSetting $node "configuration" "conn $selected" "left"]
-	set localIPs [getAllIpAddresses $node]
-	$connParamsLframe.local_ip_entry configure -values $localIPs
-	foreach localIp $localIPs {
-	    if { $local_ip_address == [lindex [split $localIp /] 0]} {
-		set local_ip_address $localIp
-		break
-	    }
-	}
-
-	if { $peers_name != "%any" } {
-	    if { $peers_name != ""} {
-		set peers_node [getNodeFromHostname $peers_name]
-		set peers_name "$peers_name - $peers_node"
-		set peerIPs [getIPAddressForPeer $peers_node $local_ip_address]
-		$connParamsLframe.peer_ip_entry configure -values $peerIPs
-		if { [llength $peerIPs] != 0 } {
-		    set peers_ip [getNodeIPsecSetting $node "configuration" "conn $selected" "right"]
-		    foreach peerIp $peerIPs {
-			if { $peers_ip == [lindex [split $peerIp /] 0]} {
-			    set peers_ip $peerIp
-			    break
-			}
+    if { $peers_name != "%any" } {
+	if { $peers_name != ""} {
+	    set peers_node [getNodeFromHostname $peers_name]
+	    set peers_name "$peers_name - $peers_node"
+	    set peerIPs [getIPAddressForPeer $peers_node $local_ip_address]
+	    $connParamsLframe.peer_ip_entry configure -values $peerIPs
+	    if { [llength $peerIPs] != 0 } {
+		set peers_ip [getNodeIPsecSetting $node "configuration" "conn $selected" "right"]
+		foreach peerIp $peerIPs {
+		    if { $peers_ip == [lindex [split $peerIp /] 0]} {
+			set peers_ip $peerIp
+			break
 		    }
 		}
-	    } else {
-		tk_messageBox -message "Peer does not have any interfaces!" -title "Error" -icon error -type ok
-		destroy .d
-		return
 	    }
+	} else {
+	    tk_messageBox -message "Peer does not have any interfaces!" -title "Error" -icon error -type ok
+	    destroy .d
+	    return
 	}
-
-	updateLocalSubnetCombobox $connParamsLframe 
-	updatePeerCombobox $connParamsLframe 
-
-	set local_subnet [getNodeIPsecSetting $node "configuration" "conn $selected" "leftsubnet"]
-	set peers_subnet [getNodeIPsecSetting $node "configuration" "conn $selected" "rightsubnet"]
-
-	set local_cert_dir "/usr/local/etc/ipsec.d/certs"
-	set secret_dir "/usr/local/etc/ipsec.d/private"
-
-	set old_conn_name $connection_name
-    } else {
-	tk_messageBox -message "Please select item to modify!" -title "Error" -icon error -type ok
-	destroy .d
-	return
     }
+
+    updateLocalSubnetCombobox $connParamsLframe 
+    updatePeerCombobox $connParamsLframe 
+
+    set local_subnet [getNodeIPsecSetting $node "configuration" "conn $selected" "leftsubnet"]
+    set peers_subnet [getNodeIPsecSetting $node "configuration" "conn $selected" "rightsubnet"]
+
+    set local_cert_dir "/usr/local/etc/ipsec.d/certs"
+    set secret_dir "/usr/local/etc/ipsec.d/private"
+
+    set old_conn_name $connection_name
 }
 
 # XXX
