@@ -2347,7 +2347,7 @@ proc setNodeType { node newtype } {
     if { [lsearch "rj45 hub lanswitch" $oldtype] >= 0 } {
 	return
     }
-    if { $oldtype == "router" && [lsearch "pc host" $newtype] >= 0 } {
+    if { $oldtype == "router" && [lsearch "pc host iot" $newtype] >= 0 } {
 	setType $node $newtype
 	set i [lsearch [set $node] "model *"]
 	set $node [lreplace [set $node] $i $i]
@@ -2363,7 +2363,7 @@ proc setNodeType { node newtype } {
 	    autoIPv4addr $node $ifc
 	    autoIPv6addr $node $ifc
 	}
-    } elseif { [lsearch "host pc" $oldtype] >= 0 \
+    } elseif { [lsearch "host pc iot" $oldtype] >= 0 \
 	    && $newtype == "router" } {
 	setType $node $newtype
 	setNodeModel $node "quagga"
@@ -3004,7 +3004,7 @@ proc transformNodes { nodes type } {
 	    upvar 0 ::cf::[set ::curcfg]::$node nodecfg
 	    global changed
 
-	    if { $type == "pc" || $type == "host" } {
+	    if { $type == "pc" || $type == "host" || $type == "iot" } {
 		# replace type
 		set typeIndex [lsearch $nodecfg "type *"]
 		set nodecfg [lreplace $nodecfg $typeIndex $typeIndex "type $type" ]

@@ -141,6 +141,7 @@ bind . <F6> {
     source "$ROOTDIR/$LIBDIR/nodes/click_l3.tcl"
     source "$ROOTDIR/$LIBDIR/nodes/host.tcl"
     source "$ROOTDIR/$LIBDIR/nodes/pc.tcl"
+    source "$ROOTDIR/$LIBDIR/nodes/iot.tcl"
     source "$ROOTDIR/$LIBDIR/nodes/localnodes.tcl"
     source "$ROOTDIR/$LIBDIR/nodes/annotations.tcl"
     source "$ROOTDIR/$LIBDIR/nodes/ext.tcl"

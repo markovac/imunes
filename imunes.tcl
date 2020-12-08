@@ -89,6 +89,7 @@ safePackageRequire [list cmdline platform ip base64]
 set initMode 0
 set execMode interactive
 set debug 0
+set eid_base i[format %04x [expr {[pid] + [expr { round( rand()*10000 ) }]}]]
 set printVersion 0
 set prepareFlag 0
 set forceFlag 0
@@ -142,21 +143,17 @@ foreach file [glob -directory $ROOTDIR/$LIBDIR/runtime *.tcl] {
     }
 }
 
-if {! [info exists eid_base]} {
-    set eid_base [genExperimentId]
-}
-
 # Set default L2 node list
 set l2nodes "hub lanswitch click_l2 rj45 stpswitch filter packgen ext"
 # Set default L3 node list
-set l3nodes "genericrouter quagga xorp static click_l3 host pc nat64"
+set l3nodes "genericrouter quagga xorp static click_l3 host pc nat64 iot"
 # Set default supported router models
 set supp_router_models "xorp quagga static"
 
 if { $isOSlinux } {
     # Limit default nodes on linux
     set l2nodes "lanswitch rj45 ext"
-    set l3nodes "genericrouter quagga static pc host nat64"
+    set l3nodes "genericrouter quagga static pc host nat64 iot"
     set supp_router_models "quagga static"
     safeSourceFile $ROOTDIR/$LIBDIR/runtime/linux.tcl
     if { $initMode == 1 } {

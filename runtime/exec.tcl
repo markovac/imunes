@@ -65,27 +65,6 @@ proc nexec { args } {
     eval exec $args
 }
 
-#****f* exec.tcl/genExperimentId
-# NAME
-#   genExperimentId -- generate experiment ID
-# SYNOPSIS
-#   set eid [genExperimentId]
-# FUNCTION
-#   Generates a new random experiment ID that will be used when the experiment
-#   is started.
-# RESULT
-#   * eid -- a new generated experiment ID
-#****
-proc genExperimentId { } {
-    global isOSlinux
-
-    if { $isOSlinux } {
-        return i[string range [format %04x [expr {[pid] + [expr { round( rand()*10000 ) }]}]] 0 2]
-    } else {
-        return i[format %04x [expr {[pid] + [expr { round( rand()*10000 ) }]}]]
-    }
-}
-
 #****f* exec.tcl/setOperMode
 # NAME
 #   setOperMode -- set operating mode
@@ -875,14 +854,14 @@ proc deployCfg {} {
     if {$execMode != "batch"} {
 	set eid ${eid_base}[string range $::curcfg 1 end]
 	while { $eid in $running_eids } {
-	    set eid_base [genExperimentId]
+	    set eid_base i[format %04x [expr {[pid] + [expr { round( rand()*10000 ) }]}]]
 	    set eid ${eid_base}[string range $::curcfg 1 end]
 	}
     } else {
 	set eid $eid_base
 	while { $eid in $running_eids } {
 	    puts -nonewline "Experiment ID $eid_base already in use, trying "
-	    set eid [genExperimentId]
+	    set eid i[format %04x [expr {[pid] + [expr { round( rand()*10000 ) }]}]]
 	    puts "$eid."
 	}
     }
@@ -904,7 +883,7 @@ proc deployCfg {} {
 	catch {destroy $w}
 	toplevel $w -takefocus 1
 	wm transient $w .
-	wm title $w "Starting experiment $eid..."
+	wm title $w "Starting experiment..."
 	message $w.msg -justify left -aspect 1200 \
 	    -text "Starting up virtual nodes and links."
 	pack $w.msg
@@ -1065,7 +1044,7 @@ proc terminateAllNodes { eid } {
 	catch {destroy $w}
 	toplevel $w -takefocus 1
 	wm transient $w .
-	wm title $w "Terminating experiment $eid..."
+	wm title $w "Terminating experiment ..."
 	message $w.msg -justify left -aspect 1200 \
 	    -text "Deleting virtual nodes and links."
 	pack $w.msg

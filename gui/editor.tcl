@@ -1123,7 +1123,7 @@ proc setActiveTool { tool } {
 
     set activetool $tool
 
-    if { $tool in {"router" "pc" "host"} } {
+    if { $tool in {"router" "pc" "host" "iot"} } {
 	set state normal
     } else {
 	set state disabled

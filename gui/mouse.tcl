@@ -578,6 +578,8 @@ proc button3node { c x y } {
 	    -command "transformNodes \"[selectedRealNodes]\" pc"
 	.button3menu.transform add command -label "Host" \
 	    -command "transformNodes \"[selectedRealNodes]\" host"
+	.button3menu.transform add command -label "IoT" \
+	    -command "transformNodes \"[selectedRealNodes]\" iot"
     }
 
     #
@@ -953,7 +955,7 @@ proc button1 { c x y button } {
     upvar 0 ::cf::[set ::curcfg]::curcanvas curcanvas
     upvar 0 ::cf::[set ::curcfg]::zoom zoom
     global activetool newlink curobj changed def_router_model
-    global router pc host lanswitch frswitch rj45 hub
+    global router pc host lanswitch frswitch rj45 hub iot
     global oval rectangle text freeform newtext
     global lastX lastY
     global background selectbox
